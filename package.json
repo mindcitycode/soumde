@@ -1,0 +1,24 @@
+{
+  "name": "soumde",
+  "version": "1.0.0",
+  "description": "browser sound",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx webpack --mode=development --watch",
+    "serve": "npx webpack serve --mode=development",
+    "build": "npx webpack --mode=production"
+  },
+  "author": "",
+  "license": "agpl-3.0",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^11.0.0",
+    "html-webpack-plugin": "^5.5.0",
+    "terser-webpack-plugin": "^5.3.5",
+    "webpack": "^5.74.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-dev-server": "^4.10.0"
+  }
+}
