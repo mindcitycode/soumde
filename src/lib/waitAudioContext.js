@@ -1,4 +1,4 @@
-export const waitAudioContext = (ac, pollInterval = 500) => {
+export const waitAudioContext = (ac = new AudioContext(), pollInterval = 500) => {
     return new Promise((accept, reject) => {
         if (ac.state === 'running') {
             return accept(ac)
