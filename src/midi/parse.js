@@ -260,17 +260,6 @@ export const parseMidiFile = async path => {
                         }
 
                     }
-
-                    log('system common message')
-                    // system common message
-                    if (byte1Right === 0) {
-                        event.isSysEx = true
-                        log('(system exclusive)')
-                        throw new Error('sysex')
-                        // sysex
-                    } else {
-                        // ....
-                    }
                 } else {
                     event.isSystemRealtimeMessage = true
                     switch (byte1Right) {
