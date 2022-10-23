@@ -7,17 +7,20 @@ import { parseVariableLengthQuantity, parseVariableLenghtBytes } from './variabl
 
 const pre = document.createElement('pre')
 document.body.append(pre)
-pre.textContent = 'ooo'
+pre.textContent = '-'
 pre.style = `font-size : 10px`
-let content = []
-const log = (...p) => {
-    content.push(p.join(' '))
+
+const showAsText = (header, tracks) => {
+    return [
+        JSON.stringify(header),
+        '====',
+        ...tracks.flatMap(track => ['-----', ...track.flatMap(event => JSON.stringify(event))])
+    ].join("-\n")
 }
+
 
 export const parseMidiFile = async path => {
     const b = await fetch(path).then(d => d.arrayBuffer())
-    // <Header Chunk> = <chunk type><length><format><ntrks><division> 
-    // console.log(b)
 
     const parseHeader = b => {
         const dv = new DataView(b)
@@ -40,11 +43,9 @@ export const parseMidiFile = async path => {
         const tracks = []
         let trackOffset = 0
         for (let i = 0; i < header.ntrks; i++) {
-            console.log('track ', i, 'start at ', trackOffset)
             const dv = new DataView(b, trackOffset)
             assert(getBytesString(b, trackOffset, 4) === 'MTrk', 'not a midi track')
             const length = getUint32(dv, 4)
-            console.log('track length', length)
             const trackEventsStart = trackOffset + 8
             tracks.push(parseTrackEvents(b.slice(trackEventsStart, trackEventsStart + length)))
             trackOffset = trackEventsStart + length
@@ -53,40 +54,32 @@ export const parseMidiFile = async path => {
     }
     const parseTrackEvents = (buffer) => {
 
-        //log('parse track events', buffer.byteLength)
-        //const dv = new DataView(b)
         const b = new Uint8Array(buffer)
-        let offset = 0
-
-        let runningStatus = undefined
-
+        
         const events = []
+        let offset = 0
+        let runningStatus = undefined
 
         while (offset < b.byteLength) {
 
             const event = {}
             event['@offset'] = offset
-            //log('@offset', offset)
 
             const vlq = parseVariableLengthQuantity(b, offset)
             const deltaTime = vlq[0]
             offset += vlq[1]
             event.deltaTime = deltaTime
 
-            //log(deltaTime)
-
             let status;
             let byte1 = b[offset]
-            //log('byte1', byte1)
             if (byte1 & 0x80) {
                 status = byte1
                 runningStatus = status
                 offset += 1
-                //    log('new status', byte1)
-                event.runningStatus = false
+                event['@runningStatus'] = false
             } else {
                 status = runningStatus
-                event.runningStatus = true
+                event['@runningStatus'] = true
             }
 
             const byte1Left = (status >>> 4) & 7
@@ -160,8 +153,7 @@ export const parseMidiFile = async path => {
             } else if (byte1Left === 7) {
                 if (byte1Right === 0xf) {
                     event.isMetaEvent = true
-                    // also reatime message
-                    event.isSystemRealtimeMessage = true
+                    event.isSystemRealtimeMessage = true // also reatime message
 
                     const metaEvent = {}
 
@@ -170,8 +162,8 @@ export const parseMidiFile = async path => {
                     metaEvent.type = type
                     metaEvent.typeString = MetaEventsTypes[type]
 
-                    const vlb = parseVariableLenghtBytes(b,offset)
-                    metaEvent.maybeText = String.fromCharCode(...vlb[0]) 
+                    const vlb = parseVariableLenghtBytes(b, offset)
+                    metaEvent.maybeText = String.fromCharCode(...vlb[0])
                     metaEvent.bytes = vlb[0]
 
                     offset += vlb[1]
@@ -183,7 +175,7 @@ export const parseMidiFile = async path => {
                     switch (byte1Right) {
                         case 0: {
                             event.systemCommonMessage = 'System Exclusive'
-                            const vlb = parseVariableLenghtBytes(b,offset)
+                            const vlb = parseVariableLenghtBytes(b, offset)
                             offset += vlb[1]
                             event.sysexBytes = vlb[0]
                             break
@@ -219,7 +211,7 @@ export const parseMidiFile = async path => {
                         }
                         case 7: {
                             event.systemCommonMessage = 'End Of Exclusive'
-                            const vlb = parseVariableLenghtBytes(b,offset)
+                            const vlb = parseVariableLenghtBytes(b, offset)
                             offset += vlb[1]
                             event.sysexBytes = vlb[0]
                             break
@@ -264,20 +256,21 @@ export const parseMidiFile = async path => {
                     }
                 }
             }
-            content.push(JSON.stringify(event))
             events.push(event)
         }
-        content.push('----------------')
         return events
     }
+
     const header = parseHeader(b.slice(0))
-    console.log("header", header)
 
     const tracksBuffer = b.slice(14)
     const tracks = parseTracks(header, tracksBuffer)
-    console.log(tracks)
-    pre.textContent = content.join("\n")
 
+    pre.textContent = showAsText(header, tracks)
+
+    return {
+        header, tracks
+    }
 }
 
 const MetaEventsTypes = {
@@ -295,5 +288,5 @@ const MetaEventsTypes = {
     0x54: 'SMPTE Offset',
     0x58: 'Time Signature',
     0x59: 'Key Signature',
-    0x7F: 'data Sequencer Specific Meta-Event'
+    0x7F: 'Data Sequencer Specific Meta-Event'
 }
