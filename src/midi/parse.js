@@ -118,12 +118,10 @@ export const parseMidiFile = async path => {
             const byte1Right = status & 0xf
 
             if (byte1Left < 7) {
-                // channel voice message  1000 -> 1110
-                event.channelVoiceMessage = true
+                event.isChannelVoiceMessage = true
                 event.channel = byte1Right
                 switch (byte1Left) {
                     case 0: {
-                        //          log('noteOff')
                         event.messageType = 'noteOff'
                         const data1 = b[offset] & 0x7f
                         const data2 = b[offset + 1] & 0x7f
@@ -133,7 +131,6 @@ export const parseMidiFile = async path => {
                         break;
                     }
                     case 1: {
-                        //        log('noteOn')
                         event.messageType = 'noteOn'
                         const data1 = b[offset] & 0x7f
                         const data2 = b[offset + 1] & 0x7f
@@ -143,7 +140,6 @@ export const parseMidiFile = async path => {
                         break;
                     }
                     case 2: {
-                        //      log('Polyphonic Key Pressure (Aftertouch)')
                         event.messageType = 'Polyphonic Key Pressure (Aftertouch)'
                         const data1 = b[offset] & 0x7f
                         const data2 = b[offset + 1] & 0x7f
@@ -153,19 +149,17 @@ export const parseMidiFile = async path => {
                         break;
                     }
                     case 3: {
-                        event.channelModeMessage = true
+                        // also channel mode message
+                        event.isChannelModeMessage = true
                         event.messageType = 'control change, but also Channel Mode Message'
-                        //    log('control change, but also Channel Mode Message')
                         const data1 = b[offset] & 0x7f
                         const data2 = b[offset + 1] & 0x7f
                         event.controllerNumber = data1
                         event.newValue = data2
                         offset += 2
-                        // also channel mode message
                     }
                     case 4: {
                         event.messageType = 'program change'
-                        //  log('program change')
                         const data1 = b[offset] & 0x7f
                         offset += 1
                         event.programNumber = data1
@@ -173,7 +167,6 @@ export const parseMidiFile = async path => {
                     }
                     case 5: {
                         event.messageType = 'Channel Pressure (After-touch)'
-                        // log('Channel Pressure (After-touch)')
                         const data1 = b[offset] & 0x7f
                         offset += 1
                         event.pressureValue = data1
@@ -181,20 +174,19 @@ export const parseMidiFile = async path => {
                     }
                     case 6: {
                         event.messageType = 'Pitch Wheel Change'
-                        //  log('Pitch Wheel Change')
                         const data1 = b[offset] & 0x7f
                         const data2 = b[offset + 1] & 0x7f
                         offset += 2
                         event.lsb = data1
                         event.msb = data2
-
                         break;
                     }
                 }
             } else if (byte1Left === 7) {
                 if (byte1Right === 0xf) {
-                    // system real-time message, also meta event 0xff
-                    //log('system realtime message, also meta event')
+                    event.isMetaEvent = true
+                    // also reatime message
+                    event.isSystemRealtimeMessage = true
 
                     const metaEvent = {}
 
@@ -203,9 +195,8 @@ export const parseMidiFile = async path => {
                     metaEvent.type = type
                     metaEvent.typeString = MetaEventsTypes[type]
 
-
                     const vlb = parseVariableLenghtBytes(b,offset)
-                    metaEvent.maybeText = String.fromCharCode(...vlb[0]) // getBytesString(b, offset, length)
+                    metaEvent.maybeText = String.fromCharCode(...vlb[0]) 
                     metaEvent.bytes = vlb[0]
 
                     offset += vlb[1]
@@ -258,7 +249,6 @@ export const parseMidiFile = async path => {
                             event.sysexBytes = vlb[0]
                             break
                         }
-
                     }
                 } else {
                     event.isSystemRealtimeMessage = true
@@ -291,6 +281,7 @@ export const parseMidiFile = async path => {
                             event.realtimeMessage = 'Active Sensing'
                             break;
                         }
+                        // 15 is used for meta event
                         default: {
                             throw new Error('wrong system realtime message' + JSON.stringify({ byte1Right, byte1Left }))
                         }
