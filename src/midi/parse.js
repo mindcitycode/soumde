@@ -5,7 +5,7 @@ const getUint16 = (dataView, start) => dataView.getUint16(start, littleEndian)
 const assert = (condition, error) => {
     if (!condition) throw new Error(error)
 }
-import { parseVariableLengthQuantity } from './variableLengthQuantity.js'
+import { parseVariableLengthQuantity, parseVariableLenghtBytes } from './variableLength.js'
 
 const test = [
     [0x00000000, [0x00]],
@@ -193,36 +193,88 @@ export const parseMidiFile = async path => {
                 }
             } else if (byte1Left === 7) {
                 if (byte1Right === 0xf) {
-
-                    const metaEvent = {}
                     // system real-time message, also meta event 0xff
                     //log('system realtime message, also meta event')
+
+                    const metaEvent = {}
+
                     const type = b[offset]
                     offset += 1
                     metaEvent.type = type
                     metaEvent.typeString = MetaEventsTypes[type]
 
 
-                    //log('meta event of type', `0x${type.toString(16)}`, ':', MetaEventsTypes[type])
-                    const vlq = parseVariableLengthQuantity(b, offset)
-                    const length = vlq[0]
-                    offset += vlq[1]
-                    metaEvent.length = length
+                    const vlb = parseVariableLenghtBytes(b,offset)
+                    metaEvent.maybeText = String.fromCharCode(...vlb[0]) // getBytesString(b, offset, length)
+                    metaEvent.bytes = vlb[0]
 
-
-                    //log('...of vlq length', length)
-                    const metaEventBytes = b.slice(offset, offset + length)
-                    metaEvent.bytes = metaEventBytes
-
-
-                    //log('maybe text ?', getBytesString(b, offset, length))
-                    metaEvent.maybeText = getBytesString(b, offset, length)
-                    offset += length
+                    offset += vlb[1]
 
                     event.metaEvent = metaEvent
 
                 } else if (byte1Right < 8) {
                     event.isSystemCommonMessage = true
+                    switch (byte1Right) {
+                        case 0: {
+                            event.systemCommonMessage = 'System Exclusive'
+                            const vlq = parseVariableLengthQuantity(b, offset)
+                            offset += vlq[1]
+
+                            const sysexLenght = vlq[0]
+                            event.sysExLength = sysexLenght
+
+                            const sysexBytes = b.slice(offset, offset + sysexLenght)
+                            event.sysexBytes = sysexBytes
+
+                            offset += sysexLenght
+                            break
+                        }
+                        case 1: {
+                            event.systemCommonMessage = 'Undefined'
+                            break
+                        }
+                        case 2: {
+                            event.systemCommonMessage = 'Song Position Pointer'
+                            const lsb = b[offset] & 0x7f
+                            const msb = b[offset + 1] & 0x7f
+                            offset += 2
+                            break
+                        }
+                        case 3: {
+                            event.systemCommonMessage = 'Song Select'
+                            const song = b[offset] & 0x7f
+                            offset += 2
+                            break
+                        }
+                        case 4: {
+                            event.systemCommonMessage = 'System Exclusive'
+                            break
+                        }
+                        case 5: {
+                            event.systemCommonMessage = 'System Exclusive'
+                            break
+                        }
+                        case 6: {
+                            event.systemCommonMessage = 'Tune Request'
+                            break
+                        }
+                        case 7: {
+                            event.systemCommonMessage = 'End Of Exclusive'
+                            const vlq = parseVariableLengthQuantity(b, offset)
+                            offset += vlq[1]
+
+                            const sysexLenght = vlq[0]
+                            event.sysExLength = sysexLenght
+
+                            const sysexBytes = b.slice(offset, offset + sysexLenght)
+                            event.sysexBytes = sysexBytes
+
+                            offset += sysexLenght
+                            break
+                        }
+
+                    }
+
                     log('system common message')
                     // system common message
                     if (byte1Right === 0) {
