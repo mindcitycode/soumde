@@ -87,12 +87,15 @@ const NoteOnCache = (ac) => {
 }
 
 import { parseMidiFile } from './midi/parse.js'
+import { sequence } from './midi/sequence.js'
+
 const main = async () => {
 
     //const path = "assets/midi_test-smpte-offset.mid"
     const path = "assets/bwv812.mid"
     const midiPart = await parseMidiFile(path)
     console.log('midiPart',midiPart)
+    sequence(midiPart)
     return midiPart
 
     const ac = new AudioContext()
