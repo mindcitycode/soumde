@@ -1,4 +1,4 @@
-import { rafLoop } from "./lib/loop"
+import { rafLoop } from "./loop.js"
 export const Oscilloscope = ac => {
 
     const analyser = ac.createAnalyser();
