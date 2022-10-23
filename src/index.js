@@ -65,7 +65,7 @@ const MonoSynthCache = (ac) => {
             const oneToRemove = synthsInUse[oneToRemoveIndex]
             synthsInUse.splice(oneToRemoveIndex, 1)
             // try 'remove' function if present
-            if ( oneToRemove.synth.remove ) oneToRemove.synth.remove()
+            if (oneToRemove.synth.remove) oneToRemove.synth.remove()
             // must be disconnected by caller
             return oneToRemove
         }
@@ -166,14 +166,29 @@ const main = async () => {
     ].map(transpose60)
 
     const part2 = []
-    const dur = 0.125
-    const loop = [0, 2, 3, 5, 8, 5, 3, 2]
-    const count = 8 / dur
-    const v = 0.2
-    for (let i = 0; i < count; i++) {
-        const key = loop[i % loop.length]
-        part2.push(transpose60([0, 'on', 1, key, v]))
-        part2.push(transpose60([dur, 'off', 1, key, v]))
+    {
+        const dur = 0.125
+        const loop = [0, 2, 3, 5, 8, 5, 3, 2]
+        const count = 8 / dur
+        const v = 0.2
+        for (let i = 0; i < count; i++) {
+            const key = loop[i % loop.length]
+            part2.push(transpose60([0, 'on', 1, key, v]))
+            part2.push(transpose60([dur, 'off', 1, key, v]))
+        }
+    }
+    const part3 = []
+    {
+        const dur = 0.125 * 3
+        const loop = [8,7,8]
+        const count = 8 / dur
+        const v = 0.2
+        const channel = 2
+        for (let i = 0; i < count; i++) {
+            const key = loop[i % loop.length]
+            part3.push(transpose60([0, 'on', channel, key, v]))
+            part3.push(transpose60([dur, 'off', channel, key, v]))
+        }
     }
 
 
@@ -192,45 +207,15 @@ const main = async () => {
     const t0 = ac.currentTime + 1
     planPart(t0, part)
     planPart(t0, part2)
+    planPart(t0, part3)
 
     noteOnCache._checkEmpty()
     console.log(monoSynthCache._stats())
 
-    setInterval( () => {
-        const oneRemoved =  monoSynthCache.removeOldAndUseless(ac.currentTime)
-        console.log('i did remove',oneRemoved)
-    },1000)
-    
-
-
-
-
-
-
-
-    /*
-        console.log(part)
-        multiNoteOn(MonoOsc, ac.currentTime + 1, 48 + 12, 1)
-        multiNoteOff(MonoOsc, ac.currentTime + 1.3, 48 + 12, 1)
-    */
-    function playIt() {
-
-        const mono = MonoOsc(ac)
-        mono.output.connect(destination)
-        mono.output.connect(oscilloscope.input)
-
-        const monoNoteOn = noteOn(mono.nodes.osc.frequency, mono.nodes.gain.gain)
-        const monoNoteOff = noteOff(mono.nodes.osc.frequency, mono.nodes.gain.gain)
-        console.log({ monoNoteOn, monoNoteOff })
-        const playedNoteOn = monoNoteOn(ac.currentTime + 1, 48 + 12, 1)
-        const playedNoteOff = monoNoteOff(playedNoteOn, ac.currentTime + 2, 48, 1)
-    }
-    //playIt()
-    /*mono.nodes.osc.frequency.value = 440
-    mono.nodes.gain.gain.value = 0.5
-    */
-    console.log(ac.state)
-
+    setInterval(() => {
+        const oneRemoved = monoSynthCache.removeOldAndUseless(ac.currentTime)
+        console.log('i did remove', oneRemoved)
+    }, 1000)
 }
 
 main()
