@@ -2,33 +2,8 @@ const getBytesString = (arrayBuffer, start, length) => String.fromCharCode(...ne
 const littleEndian = false
 const getUint32 = (dataView, start) => dataView.getUint32(start, littleEndian)
 const getUint16 = (dataView, start) => dataView.getUint16(start, littleEndian)
-const assert = (condition, error) => {
-    if (!condition) throw new Error(error)
-}
+import { assert } from '../lib/assert.js'
 import { parseVariableLengthQuantity, parseVariableLenghtBytes } from './variableLength.js'
-
-const test = [
-    [0x00000000, [0x00]],
-    [0x00000040, [0x40]],
-    [0x0000007F, [0x7F]],
-    [0x00000080, [0x81, 0x00]],
-    [0x00002000, [0xC0, 0x00]],
-    [0x00003FFF, [0xFF, 0x7F]],
-    [0x00004000, [0x81, 0x80, 0x00]],
-    [0x00100000, [0xC0, 0x80, 0x00]],
-    [0x001FFFFF, [0xFF, 0xFF, 0x7F]],
-    [0x00200000, [0x81, 0x80, 0x80, 0x00]],
-    [0x08000000, [0xC0, 0x80, 0x80, 0x00]],
-    [0x0FFFFFFF, [0xFF, 0xFF, 0xFF, 0x7F]]
-]
-test.forEach(([value, array]) => {
-    const [parsedValue, parsedLength] = parseVariableLengthQuantity(array, 0)
-    assert(
-        ((parsedValue === value) && (parsedLength === array.length)),
-        'reading of vlq is wrong'
-    )
-})
-
 
 const pre = document.createElement('pre')
 document.body.append(pre)
