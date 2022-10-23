@@ -1,6 +1,3 @@
-//const disconnectAll = nodes => () => nodes.forEach(node => node.disconnect())
-//const stopAll = nodes => () => nodes.forEach(node => { if (node.stop) node.stop() })
-
 const stopAndDisconnectAll = nodes => () => Object.values(nodes).forEach(node => {
     if (node.disconnect) node.disconnect()
     if (node.stop) node.stop()

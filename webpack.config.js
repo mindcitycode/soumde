@@ -12,7 +12,7 @@ const config = {
     plugins: [
         new CopyPlugin({
             patterns: [
-    //            { from: "assets", to: "assets" },
+                { from: "assets", to: "assets" },
                 { from: "favicon.ico", to: "favicon.ico" },
             ],
         }),
