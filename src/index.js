@@ -13,6 +13,7 @@ const part = [
     [1, 'note_off', 64, 0]
 ]
 class SynthInUse {
+    static oldAge = 10
     createFunction = undefined
     synth = undefined
     availableAfter = undefined // undefined means never
@@ -35,6 +36,13 @@ class SynthInUse {
             this.availableAfter = time
         }
     }
+    isOldAndUseless(currentTime) {
+        if (this.availableAfter === undefined) {
+            return false
+        }
+        const uselessTime = currentTime - this.availableAfter
+        return (uselessTime > SynthInUse.oldAge)
+    }
 }
 
 const MonoSynthCache = (ac) => {
@@ -51,7 +59,19 @@ const MonoSynthCache = (ac) => {
             return { reused: false, synthInUse }
         }
     }
-    return { getSynth }
+    const removeOldAndUseless = (currentTime) => {
+        const oneToRemoveIndex = synthsInUse.findIndex(synthInUse => synthInUse.isOldAndUseless(currentTime))
+        if (oneToRemoveIndex !== -1) {
+            const oneToRemove = synthsInUse[oneToRemoveIndex]
+            synthsInUse.splice(oneToRemoveIndex, 1)
+            // try 'remove' function if present
+            if ( oneToRemove.remove ) oneToRemove.remove()
+            // must be disconnected by caller
+            return oneToRemove
+        }
+    }
+    const _stats = () => synthsInUse
+    return { getSynth, _stats, removeOldAndUseless }
 }
 
 const NoteOnCache = (ac) => {
@@ -154,7 +174,7 @@ const main = async () => {
         const key = loop[i % loop.length]
         part2.push(transpose60([0, 'on', 1, key, v]))
         part2.push(transpose60([dur, 'off', 1, key, v]))
-     }
+    }
 
 
     function planPart(t0, part) {
@@ -174,9 +194,13 @@ const main = async () => {
     planPart(t0, part2)
 
     noteOnCache._checkEmpty()
+    console.log(monoSynthCache._stats())
 
+    setInterval( () => {
+        const oneRemoved =  monoSynthCache.removeOldAndUseless(ac.currentTime)
+        console.log('i did remove',oneRemoved)
+    },1000)
     
-
 
 
 
