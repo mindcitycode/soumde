@@ -45,7 +45,6 @@ const MonoSynthCache = (ac) => {
         if (available) {
             return { reused: true, synthInUse: available }
         } else {
-            console.log('create synth !')
             const synth = createFunction(ac)
             const synthInUse = new SynthInUse(createFunction, synth, time - oneSampleDuration)
             synthsInUse.push(synthInUse)
@@ -75,9 +74,13 @@ const NoteOnCache = (ac) => {
     const set = (createFunction, channel, key, playedNoteOn, synthInUse) => {
         cache.push(({ createFunction, channel, key, playedNoteOn, synthInUse }))
     }
+    const _checkEmpty = () => {
+        if (cache.length) throw new Error('the cache should be empty')
+    }
     return {
         findAndRemove,
-        set
+        set,
+        _checkEmpty
     }
 }
 
@@ -100,7 +103,6 @@ const main = async () => {
     const monoSynthCache = MonoSynthCache(ac)
     const noteOnCache = NoteOnCache(ac)
     const multiNoteOn = (createFunction, time, channel, key, velocity) => {
-        console.log('multiNoteOn', createFunction, time, key, velocity)
         const { reused, synthInUse } = monoSynthCache.getSynth(createFunction, time)
         const mono = synthInUse.synth
         if (reused === false) {
@@ -114,7 +116,6 @@ const main = async () => {
 
     }
     const multiNoteOff = (createFunction, time, channel, key, velocity) => {
-        console.log('multiNoteOff', createFunction, time, key, velocity)
         const cachedNoteOn = noteOnCache.findAndRemove(createFunction, channel, key)
         const synthInUse = cachedNoteOn.synthInUse
         const mono = cachedNoteOn.synthInUse.synth
@@ -124,16 +125,16 @@ const main = async () => {
         synthInUse.notifyTimeOfUse(playedNoteOff.end)
     }
     const transposeEvent = t => e => [...e.slice(0, 3), e[3] + t, ...e.slice(4)]
-
+    const transpose60 = transposeEvent(48 + 12)
     const part = [
         [0, 'on', 0, 0, 1],
         [0, 'on', 0, 8, 1],
         [0, 'on', 0, 14, 1],
         [1, 'off', 0, 0, 1],
         [0, 'off', 0, 8, 1],
-        [0, 'off', 0, 14, 1],
-       
-        [2, 'on', 0, 2, 1],
+        [0.5, 'off', 0, 14, 1],
+
+        [1.5, 'on', 0, 2, 1],
         [1, 'off', 0, 2, 1],
 
         [0, 'on', 0, 3, 1],
@@ -142,23 +143,46 @@ const main = async () => {
         [0, 'on', 0, -1, 1],
         [3, 'off', 0, -1, 1]
 
-    ].map(transposeEvent(48 + 12))
+    ].map(transpose60)
+
+    const part2 = []
+    const dur = 0.125
+    const loop = [0, 2, 3, 5, 8, 5, 3, 2]
+    const count = 8 / dur
+    const v = 0.2
+    for (let i = 0; i < count; i++) {
+        const key = loop[i % loop.length]
+        part2.push(transpose60([0, 'on', 1, key, v]))
+        part2.push(transpose60([dur, 'off', 1, key, v]))
+     }
 
 
-
-    console.log('part', part)
+    function planPart(t0, part) {
+        let t = t0
+        part.forEach(event => {
+            const [delta, type, channel, key, velocity] = event
+            t += delta
+            if (type === 'on') {
+                multiNoteOn(MonoOsc, t, channel, key, velocity)
+            } else if (type === 'off') {
+                multiNoteOff(MonoOsc, t, channel, key, velocity)
+            }
+        })
+    }
     const t0 = ac.currentTime + 1
-    let t = t0
-    part.forEach(event => {
-        const [delta, type, channel, key, velocity] = event
-        t += delta
-        console.log('@t', t - t0)
-        if (type === 'on') {
-            multiNoteOn(MonoOsc, t, channel, key, velocity)
-        } else if (type === 'off') {
-            multiNoteOff(MonoOsc, t, channel, key, velocity)
-        }
-    })
+    planPart(t0, part)
+    planPart(t0, part2)
+
+    noteOnCache._checkEmpty()
+
+    
+
+
+
+
+
+
+
 
     /*
         console.log(part)
