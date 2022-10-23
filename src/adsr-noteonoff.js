@@ -8,7 +8,7 @@ const adsrEnveloppe = {
     release: 0.2     // duration
 }
 
-export const noteOn = (freqAp, gainAp) => (time, key, velocity) => {
+export const AdsrNoteOn = (freqAp, gainAp) => (time, key, velocity) => {
 
     freqAp.cancelScheduledValues(time)
     gainAp.cancelScheduledValues(time)
@@ -37,7 +37,7 @@ export const noteOn = (freqAp, gainAp) => (time, key, velocity) => {
     }
 }
 
-export const noteOff = (freqAp, gainAp) => (matchingNoteOnValue, time, key, velocity) => {
+export const AdsrNoteOff = (freqAp, gainAp) => (matchingNoteOnValue, time, key, velocity) => {
 
     freqAp.cancelScheduledValues(time)
     gainAp.cancelScheduledValues(time)
