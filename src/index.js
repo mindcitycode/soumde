@@ -65,7 +65,7 @@ const MonoSynthCache = (ac) => {
             const oneToRemove = synthsInUse[oneToRemoveIndex]
             synthsInUse.splice(oneToRemoveIndex, 1)
             // try 'remove' function if present
-            if ( oneToRemove.remove ) oneToRemove.remove()
+            if ( oneToRemove.synth.remove ) oneToRemove.synth.remove()
             // must be disconnected by caller
             return oneToRemove
         }
