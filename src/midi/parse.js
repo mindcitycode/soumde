@@ -5,21 +5,7 @@ const getUint16 = (dataView, start) => dataView.getUint16(start, littleEndian)
 const assert = (condition, error) => {
     if (!condition) throw new Error(error)
 }
-const parseVariableLengthQuantity = (b, pos) => {
-    let result = 0
-    for (let i = 0; i < 4; i++) {
-        const byte = b[pos + i]
-        result |= byte & 0x7f
-        if (byte & 0x80) {
-            result = result << 7
-        } else {
-            return [
-                result,
-                i + 1,
-            ]
-        }
-    }
-}
+import { parseVariableLengthQuantity } from './variableLengthQuantity.js'
 
 const test = [
     [0x00000000, [0x00]],
@@ -42,6 +28,16 @@ test.forEach(([value, array]) => {
         'reading of vlq is wrong'
     )
 })
+
+
+const pre = document.createElement('pre')
+document.body.append(pre)
+pre.textContent = 'ooo'
+pre.style = `font-size : 10px`
+let content = []
+const log = (...p) => {
+    content.push(p.join(' '))
+}
 
 export const parseMidiFile = async path => {
     const b = await fetch(path).then(d => d.arrayBuffer())
@@ -80,122 +76,206 @@ export const parseMidiFile = async path => {
         }
         return tracks
     }
-
-    const pre = document.createElement('pre')
-    document.body.append(pre)
-    pre.textContent = 'ooo'
-    pre.style = `font-size : 10px`
-    let content = []
-    const log = (...p) => {
-        content.push(p.join(' '))
-    }
-
-
     const parseTrackEvents = (buffer) => {
 
-        log('parse track events', buffer.byteLength)
+        //log('parse track events', buffer.byteLength)
         //const dv = new DataView(b)
         const b = new Uint8Array(buffer)
         let offset = 0
 
         let runningStatus = undefined
 
+        const events = []
+
         while (offset < b.byteLength) {
 
-            log('@offset', offset)
+            const event = {}
+            event['@offset'] = offset
+            //log('@offset', offset)
+
             const vlq = parseVariableLengthQuantity(b, offset)
             const deltaTime = vlq[0]
             offset += vlq[1]
+            event.deltaTime = deltaTime
 
-            log(deltaTime)
+            //log(deltaTime)
 
             let status;
             let byte1 = b[offset]
-            log('byte1', byte1)
+            //log('byte1', byte1)
             if (byte1 & 0x80) {
                 status = byte1
                 runningStatus = status
                 offset += 1
-                log('new status', byte1)
+                //    log('new status', byte1)
+                event.runningStatus = false
             } else {
                 status = runningStatus
+                event.runningStatus = true
             }
 
             const byte1Left = (status >>> 4) & 7
             const byte1Right = status & 0xf
 
-            if (byte1Left === 3) {
-                // channel mode message   1011
-                log('cc')
-                offset += 2
-            } else if (byte1Left < 7) {
+            if (byte1Left < 7) {
                 // channel voice message  1000 -> 1110
+                event.channelVoiceMessage = true
+                event.channel = byte1Right
                 switch (byte1Left) {
                     case 0: {
-                        log('noteOff')
+                        //          log('noteOff')
+                        event.messageType = 'noteOff'
+                        const data1 = b[offset] & 0x7f
+                        const data2 = b[offset + 1] & 0x7f
                         offset += 2
+                        event.key = data1
+                        event.velocity = data2
                         break;
                     }
                     case 1: {
-                        log('noteOn')
+                        //        log('noteOn')
+                        event.messageType = 'noteOn'
+                        const data1 = b[offset] & 0x7f
+                        const data2 = b[offset + 1] & 0x7f
                         offset += 2
+                        event.key = data1
+                        event.velocity = data2
                         break;
                     }
                     case 2: {
-                        log('Polyphonic Key Pressure (Aftertouch)')
+                        //      log('Polyphonic Key Pressure (Aftertouch)')
+                        event.messageType = 'Polyphonic Key Pressure (Aftertouch)'
+                        const data1 = b[offset] & 0x7f
+                        const data2 = b[offset + 1] & 0x7f
                         offset += 2
+                        event.key = data1
+                        event.pressureValue = data2
                         break;
                     }
-                    // case 3 : {} // CC
+                    case 3: {
+                        event.channelModeMessage = true
+                        event.messageType = 'control change, but also Channel Mode Message'
+                        //    log('control change, but also Channel Mode Message')
+                        const data1 = b[offset] & 0x7f
+                        const data2 = b[offset + 1] & 0x7f
+                        event.controllerNumber = data1
+                        event.newValue = data2
+                        offset += 2
+                        // also channel mode message
+                    }
                     case 4: {
-                        log('program change')
+                        event.messageType = 'program change'
+                        //  log('program change')
+                        const data1 = b[offset] & 0x7f
                         offset += 1
+                        event.programNumber = data1
                         break;
                     }
                     case 5: {
-                        log('Channel Pressure (After-touch)')
+                        event.messageType = 'Channel Pressure (After-touch)'
+                        // log('Channel Pressure (After-touch)')
+                        const data1 = b[offset] & 0x7f
                         offset += 1
+                        event.pressureValue = data1
                         break;
                     }
                     case 6: {
-                        log('Pitch Wheel Change')
+                        event.messageType = 'Pitch Wheel Change'
+                        //  log('Pitch Wheel Change')
+                        const data1 = b[offset] & 0x7f
+                        const data2 = b[offset + 1] & 0x7f
                         offset += 2
+                        event.lsb = data1
+                        event.msb = data2
+
                         break;
                     }
                 }
             } else if (byte1Left === 7) {
                 if (byte1Right === 0xf) {
+
+                    const metaEvent = {}
                     // system real-time message, also meta event 0xff
-                    log('system realtime message, also meta event')
+                    //log('system realtime message, also meta event')
                     const type = b[offset]
                     offset += 1
-                    
-                    log('meta event of type', `0x${type.toString(16)}`,':',MetaEventsTypes[type])
+                    metaEvent.type = type
+                    metaEvent.typeString = MetaEventsTypes[type]
+
+
+                    //log('meta event of type', `0x${type.toString(16)}`, ':', MetaEventsTypes[type])
                     const vlq = parseVariableLengthQuantity(b, offset)
                     const length = vlq[0]
                     offset += vlq[1]
-                    log('...of vlq length', length)
-                    const metaEventBytes = b.slice(offset,offset+length)
-                    log('maybe text ?',getBytesString(b,offset,length))
+                    metaEvent.length = length
+
+
+                    //log('...of vlq length', length)
+                    const metaEventBytes = b.slice(offset, offset + length)
+                    metaEvent.bytes = metaEventBytes
+
+
+                    //log('maybe text ?', getBytesString(b, offset, length))
+                    metaEvent.maybeText = getBytesString(b, offset, length)
                     offset += length
-                } else {
+
+                    event.metaEvent = metaEvent
+
+                } else if (byte1Right < 8) {
+                    event.isSystemCommonMessage = true
                     log('system common message')
                     // system common message
                     if (byte1Right === 0) {
+                        event.isSysEx = true
                         log('(system exclusive)')
                         throw new Error('sysex')
                         // sysex
                     } else {
                         // ....
                     }
+                } else {
+                    event.isSystemRealtimeMessage = true
+                    switch (byte1Right) {
+                        case 8: {
+                            event.realtimeMessage = 'Timing Clock'
+                            break;
+                        }
+                        case 9: {
+                            event.realtimeMessage = 'Undefined'
+                            break;
+                        }
+                        case 10: {
+                            event.realtimeMessage = 'Start'
+                            break;
+                        }
+                        case 11: {
+                            event.realtimeMessage = 'Continue'
+                            break;
+                        }
+                        case 12: {
+                            event.realtimeMessage = 'Stop'
+                            break;
+                        }
+                        case 13: {
+                            event.realtimeMessage = 'Undefined'
+                            break;
+                        }
+                        case 14: {
+                            event.realtimeMessage = 'Active Sensing'
+                            break;
+                        }
+                        default: {
+                            throw new Error('wrong system realtime message' + JSON.stringify({ byte1Right, byte1Left }))
+                        }
+
+                    }
                 }
-            } else {
-                throw new Error('no  at ' + offset)
             }
-
-
+            content.push(JSON.stringify(event))
+            events.push(event)
         }
-        return b
+        content.push('----------------')
+        return events
     }
     const header = parseHeader(b.slice(0))
     console.log("header", header)
