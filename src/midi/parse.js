@@ -217,16 +217,9 @@ export const parseMidiFile = async path => {
                     switch (byte1Right) {
                         case 0: {
                             event.systemCommonMessage = 'System Exclusive'
-                            const vlq = parseVariableLengthQuantity(b, offset)
-                            offset += vlq[1]
-
-                            const sysexLenght = vlq[0]
-                            event.sysExLength = sysexLenght
-
-                            const sysexBytes = b.slice(offset, offset + sysexLenght)
-                            event.sysexBytes = sysexBytes
-
-                            offset += sysexLenght
+                            const vlb = parseVariableLenghtBytes(b,offset)
+                            offset += vlb[1]
+                            event.sysexBytes = vlb[0]
                             break
                         }
                         case 1: {
@@ -260,16 +253,9 @@ export const parseMidiFile = async path => {
                         }
                         case 7: {
                             event.systemCommonMessage = 'End Of Exclusive'
-                            const vlq = parseVariableLengthQuantity(b, offset)
-                            offset += vlq[1]
-
-                            const sysexLenght = vlq[0]
-                            event.sysExLength = sysexLenght
-
-                            const sysexBytes = b.slice(offset, offset + sysexLenght)
-                            event.sysexBytes = sysexBytes
-
-                            offset += sysexLenght
+                            const vlb = parseVariableLenghtBytes(b,offset)
+                            offset += vlb[1]
+                            event.sysexBytes = vlb[0]
                             break
                         }
 
