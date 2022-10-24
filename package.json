@@ -1,7 +1,7 @@
 {
   "name": "soumde",
   "version": "1.0.0",
-  "description": "browser sound",
+  "description": "a zero-dependency browser midi player",
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,7 +9,7 @@
     "serve": "npx webpack serve --mode=development",
     "build": "npx webpack --mode=production"
   },
-  "author": "",
+  "author": "mindcitycode <mindcity@proton.me>",
   "license": "agpl-3.0",
   "dependencies": {
   },
