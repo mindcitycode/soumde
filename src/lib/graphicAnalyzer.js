@@ -1,5 +1,5 @@
 import { rafLoop } from "./loop.js"
-export const Oscilloscope = (ac, [width,height] = [300, 300]) => {
+export const Oscilloscope = (ac, size = [300, 300]) => {
 
     const analyser = ac.createAnalyser();
     analyser.fftSize = 256 * 8;
@@ -7,11 +7,15 @@ export const Oscilloscope = (ac, [width,height] = [300, 300]) => {
     const dataArray = new Uint8Array(bufferLength);
 
     const canvas = document.createElement('canvas')
-    const resize = () => {
-        if (canvas.width !== width ) canvas.width = width
-        if (canvas.height !== height )canvas.height = height
+
+    const setSize = (w, h) => {
+        size[0] = w
+        size[1] = h
     }
-    document.body.append(canvas)
+    const resize = () => {
+        if (canvas.width !== size[0]) canvas.width = size[0]
+        if (canvas.height !== size[1]) canvas.height = size[1]
+    }
     const ctx = canvas.getContext('2d')
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -56,6 +60,7 @@ export const Oscilloscope = (ac, [width,height] = [300, 300]) => {
     return {
         nodes: { analyser },
         input: analyser,
-        resize
+        canvas,
+        setSize,
     }
 }

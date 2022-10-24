@@ -45,7 +45,7 @@ const main = async () => {
     const parsedMidiFile = await parseMidiFile(path)
     console.log('midiPart', parsedMidiFile)
     const parts = sequence(parsedMidiFile)
-  //  parts[1].length = 500
+    //  parts[1].length = 500
     console.log('parts', parts)
     //   return midiPart
 
@@ -60,8 +60,18 @@ const main = async () => {
     safeOutput.output.gain.value = 0.5
 
     const destination = safeOutput.input
+    
     const oscilloscope = Oscilloscope(ac)
-
+    safeOutput.output.connect(oscilloscope.input)
+    const oscilloscopeCanvas = oscilloscope.canvas
+    
+    document.body.append(oscilloscopeCanvas)
+    oscilloscopeCanvas.style = `position:fixed;top:0;left:0;z-index:-5`
+    onresize = () => {
+        oscilloscope.setSize(window.innerWidth, window.innerHeight)
+        console.log('resize')
+    }
+    onresize()
     //
     const synthPool = SynthPool(ac)
     const noteOnCache = NoteOnCache(ac)
@@ -71,7 +81,7 @@ const main = async () => {
         const mono = synthInUse.synth
         if (reused === false) {
             mono.output.connect(destination)
-            mono.output.connect(oscilloscope.input)
+            //mono.output.connect(oscilloscope.input)
         }
         const monoNoteOn = AdsrNoteOn(mono.nodes.osc.frequency, mono.nodes.gain.gain)
         const playedNoteOn = monoNoteOn(time, key, velocity)
