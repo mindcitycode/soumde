@@ -1,20 +1,23 @@
 import { rafLoop } from "./loop.js"
-export const Oscilloscope = ac => {
+export const Oscilloscope = (ac, [width,height] = [300, 300]) => {
 
     const analyser = ac.createAnalyser();
-    analyser.fftSize =  256 * 8;
+    analyser.fftSize = 256 * 8;
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
     const canvas = document.createElement('canvas')
-    canvas.width = 400
-    canvas.height = 200
+    const resize = () => {
+        if (canvas.width !== width ) canvas.width = width
+        if (canvas.height !== height )canvas.height = height
+    }
     document.body.append(canvas)
     const ctx = canvas.getContext('2d')
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     rafLoop((dt, t) => {
+        resize()
         analyser.getByteTimeDomainData(dataArray)
         ctx.fillStyle = 'rgba(128,128,128,0.5)'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -43,15 +46,16 @@ export const Oscilloscope = ac => {
 
 
 
- /*   const osc = ac.createOscillator()
-    osc.frequency.value = 256;
-    osc.start()
-    osc.connect(analyser)
-*/
+    /*   const osc = ac.createOscillator()
+       osc.frequency.value = 256;
+       osc.start()
+       osc.connect(analyser)
+   */
     //    analyser.connect(ac.destination)
 
     return {
-        nodes : { analyser },
-        input : analyser
+        nodes: { analyser },
+        input: analyser,
+        resize
     }
 }
