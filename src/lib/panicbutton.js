@@ -1,6 +1,11 @@
 export const PanicButton = (ac, $parent = document.body) => {
     const $b = document.createElement('button')
-    $b.style = `font-size : 50px ; width : 300px; height : 300px; border : 10px solid black ; border-radius : 20px`
+    $b.style = `font-size : 50px ; width : 300px; height : 300px; border : 10px solid black ; border-radius : 20px;`+`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    opacity:95%;
+    transform: translate(-50%, -50%);`
     $b.onclick = () => {
         if (ac.state === 'running') {
             ac.suspend()
