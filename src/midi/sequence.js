@@ -20,30 +20,58 @@ export const sequence = ({ header, tracks }) => {
                 // "microseconds per quarter-note"
                 const value = (byte0 << 16) | (byte1 << 8) | byte2
                 tempoMap.push([totalTicks, value])
-
                 console.log(secondPerTick(value, tpqn))
             }
         })
     })
 
-    const tickDuration = secondPerTick(tempoMap[0][1], tpqn)
+    tempoMap.sort((a, b) => [a[0] - b[0]])
 
-    tracks.forEach(track => {
-        let totalTicks = 0
-        track.forEach(event => {
-            totalTicks += event.deltaTime
-            if (eventIsNoteOn(event) || (eventIsNoteOff(event))) {
-                const absoluteTime = totalTicks * tickDuration
-                console.log(totalTicks,absoluteTime/60 , event.messageType,'c:', event.channel, 'k:', event.key, 'v:', event.velocity)
-            }
-        })
+
+
+    tempoMap.forEach(el => {
+        const [totalTick, uSecondPerQuarterNote] = el
     })
-
-
     console.log('tempoMap', tempoMap)
 
 
+    const tickDuration = secondPerTick(tempoMap[0][1], tpqn)
 
+    /*   tracks.forEach(track => {
+           let totalTicks = 0
+           track.forEach(event => {
+               totalTicks += event.deltaTime
+               if (eventIsNoteOn(event) || (eventIsNoteOff(event))) {
+                   const absoluteTime = totalTicks * tickDuration
+                   console.log(totalTicks,absoluteTime/60 , event.messageType,'c:', event.channel, 'k:', event.key, 'v:', event.velocity)
+               }
+           })
+       })
+   */
+
+    const sequences = []
+    tracks.forEach(track => {
+        const sequence = []
+        let lastAbsoluteTime = 0
+        let totalTicks = 0
+        track.forEach(event => {
+            totalTicks += event.deltaTime
+            const absoluteTime = totalTicks * tickDuration
+            if (eventIsNoteOn(event) || (eventIsNoteOff(event))) {
+                const absoluteTime = totalTicks * tickDuration
+                // console.log(totalTicks, absoluteTime / 60, event.messageType, 'c:', event.channel, 'k:', event.key, 'v:', event.velocity)
+                const deltaTime = absoluteTime - lastAbsoluteTime
+                sequence.push([deltaTime, eventIsNoteOn(event) ? 'on' : 'off', event.channel, event.key, event.velocity/127])
+                lastAbsoluteTime = absoluteTime
+            } else {
+
+            }
+        })
+        sequences.push(sequence)
+    })
+ 
+
+    return sequences
 
 
 }

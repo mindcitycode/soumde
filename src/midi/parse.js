@@ -266,7 +266,7 @@ export const parseMidiFile = async path => {
     const tracksBuffer = b.slice(14)
     const tracks = parseTracks(header, tracksBuffer)
 
-    pre.textContent = showAsText(header, tracks)
+  //  pre.textContent = showAsText(header, tracks)
 
     return {
         header, tracks

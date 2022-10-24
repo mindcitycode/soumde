@@ -93,10 +93,13 @@ const main = async () => {
 
     //const path = "assets/midi_test-smpte-offset.mid"
     const path = "assets/bwv812.mid"
-    const midiPart = await parseMidiFile(path)
-    console.log('midiPart',midiPart)
-    sequence(midiPart)
-    return midiPart
+    const parsedMidiFile = await parseMidiFile(path)
+    console.log('midiPart', parsedMidiFile)
+    const parts = sequence(parsedMidiFile)
+  //  parts[1].length = 500
+    console.log('parts', parts)
+    //   return midiPart
+
 
     const ac = new AudioContext()
     PanicButton(ac)
@@ -151,11 +154,14 @@ const main = async () => {
             }
         })
     }
-    const [part, part2, part3] = getExampleParts()
     const t0 = ac.currentTime + 1
+    /*
+    const [part, part2, part3] = getExampleParts()
     planPart(t0, part)
     planPart(t0, part2)
     planPart(t0, part3)
+*/
+    parts.forEach(part => planPart(t0, part))
 
     noteOnCache._checkEmpty()
     console.log('pool stats', synthPool._stats())
