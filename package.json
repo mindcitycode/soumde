@@ -10,7 +10,7 @@
     "build": "npx webpack --mode=production"
   },
   "author": "mindcitycode <mindcity@proton.me>",
-  "license": "agpl-3.0",
+  "license": "AGPL-3.0-only",
   "dependencies": {
   },
   "devDependencies": {

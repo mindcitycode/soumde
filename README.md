@@ -22,4 +22,4 @@ build
 
 ## license
 
-soumde is licensed under the agpl-3.0 license
+soumde is licensed under the AGPL-3.0-only license
